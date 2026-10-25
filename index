@@ -177,8 +177,8 @@
 <div id="overlay" class="overlay" hidden></div>
 
 <script>
-const SUPABASE_URL = "COLLER_ICI_URL_PROJET_AAROS_ADMIN";
-const SUPABASE_ANON_KEY = "COLLER_ICI_CLE_ANON_PROJET_AAROS_ADMIN";
+const SUPABASE_URL = "https://czhthoffgualknbpvztt.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6aHRob2ZmZ3VhbGtuYnB2enR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5NTU0NzIsImV4cCI6MjEwODUzMTQ3Mn0.27ogLAYUiJ4A_oiP8eVsFi8sP3Xo5vqFsWdPgphQypk";
 
 let supa, currentUser = null, clientsCache = [], statutFilter = "";
 
