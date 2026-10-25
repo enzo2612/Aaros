@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AAROS Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<style>
+  :root{
+    --accent:#E20613; --accent-ink:#ffffff; --ink:#161414; --ink-soft:#5b5555;
+    --paper:#fbf9f8; --surface:#ffffff; --surface-2:#f2eeed; --line:#e6e0de;
+    --success:#1c7a4d; --success-soft:#e4f4ec; --warn:#8a5a00; --warn-soft:#fbf1de; --warn-line:#e6cf9e;
+    --danger:#b23a2e; --danger-soft:#fbeae7;
+    --accent-2:#0f6e8c; --accent-2-soft:#e6f1f5;
+    --shadow: 0 1px 2px rgba(22,20,20,.06), 0 8px 24px -12px rgba(22,20,20,.18);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:"Archivo","Bahnschrift","Arial Narrow",Arial,sans-serif;}
+  .num{font-variant-numeric:tabular-nums;}
+  .shell{width:100%; max-width:1100px; margin-inline:auto; padding:16px 16px 48px;}
+  [hidden]{display:none !important;}
+
+  header.topbar{position:sticky; top:0; z-index:20; background:var(--paper); border-bottom:1px solid var(--line); padding:14px 16px;}
+  .brandrow{display:flex; align-items:center; gap:12px; flex-wrap:wrap; max-width:1100px; margin-inline:auto;}
+  .wordmark{display:flex; gap:8px; flex:1; min-width:0;}
+  .wordmark .bar{width:5px; background:var(--accent); border-radius:2px;}
+  .wordmark b{font-size:19px; font-weight:900;}
+  .wordmark span{display:block; font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); margin-top:2px;}
+  .who{font-size:12.5px; font-weight:700; color:var(--ink-soft); display:flex; align-items:center; gap:10px;}
+  .btn{appearance:none; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:10px; padding:8px 14px; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit;}
+  .btn:hover{border-color:var(--accent);}
+  .btn.primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .btn.ghost{background:none; border:none; text-decoration:underline; padding:4px;}
+  .btn.sm{padding:5px 10px; font-size:12px;}
+
+  .tabs{display:flex; gap:4px; max-width:1100px; margin:10px auto 0; padding:0 16px;}
+  .tabs button{appearance:none; border:1px solid var(--line); border-bottom:none; background:var(--surface); color:var(--ink-soft); font-weight:700; font-size:13px; padding:9px 16px; border-radius:10px 10px 0 0; cursor:pointer; position:relative; top:1px; font-family:inherit;}
+  .tabs button[aria-selected="true"]{color:var(--ink); background:var(--paper);}
+  .tabline{border-bottom:1px solid var(--line);}
+
+  .gate{max-width:380px; margin:64px auto; text-align:center;}
+  .gate .wordmark{justify-content:center; margin-bottom:28px;}
+  .gate h1{font-size:16px; font-weight:800; margin-bottom:18px;}
+  .gate input{width:100%; padding:11px 12px; margin-bottom:10px; border-radius:10px; border:1px solid var(--line); font-size:14px; font-family:inherit;}
+  .gate .btn{width:100%; margin-top:4px;}
+  .gate-error{color:var(--danger); font-size:12.5px; font-weight:700; margin-top:10px; min-height:16px;}
+
+  .status-banner{display:flex; align-items:center; gap:10px; border-radius:12px; padding:10px 14px; margin:16px 0; font-size:13px;}
+  .status-banner.ok{background:var(--success-soft); color:var(--success); border:1px solid var(--success);}
+  .status-banner.err{background:var(--warn-soft); color:var(--warn); border:1px solid var(--warn-line);}
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:16px; box-shadow:var(--shadow);}
+  .card h2{font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-soft); margin:0 0 12px;}
+  .row-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
+
+  .chips{display:flex; gap:6px; flex-wrap:wrap;}
+  .chip{appearance:none; border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit;}
+  .chip.active{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th,td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top;}
+  th{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); font-weight:800;}
+  tr.clickable{cursor:pointer;}
+  tr.clickable:hover{background:var(--surface-2);}
+  .table-scroll{overflow-x:auto;}
+
+  .badge{display:inline-block; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; padding:3px 9px; border-radius:6px; white-space:nowrap;}
+  .badge.ouvert{background:var(--danger-soft); color:var(--danger);}
+  .badge.en_cours{background:var(--warn-soft); color:var(--warn);}
+  .badge.traite{background:var(--accent-2-soft); color:var(--accent-2);}
+  .badge.clos{background:var(--success-soft); color:var(--success);}
+  .badge.actif{background:var(--success-soft); color:var(--success);}
+  .badge.suspendu{background:var(--warn-soft); color:var(--warn);}
+  .badge.resilie{background:var(--danger-soft); color:var(--danger);}
+  .badge.n1{background:var(--surface-2); color:var(--ink-soft);}
+  .badge.n2{background:#fdeeea; color:var(--accent);}
+
+  .overlay{position:fixed; inset:0; background:rgba(22,20,20,.4); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; z-index:50; overflow-y:auto;}
+  .modal{background:var(--surface); border-radius:14px; padding:20px; max-width:520px; width:100%; box-shadow:var(--shadow);}
+  .modal h3{margin:0 0 14px; font-size:15px; font-weight:800;}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:11.5px; font-weight:800; color:var(--ink-soft); margin-bottom:5px; text-transform:uppercase; letter-spacing:.04em;}
+  .field input, .field select, .field textarea{width:100%; padding:9px 11px; border-radius:9px; border:1px solid var(--line); font-size:13.5px; font-family:inherit;}
+  .field textarea{min-height:64px; resize:vertical;}
+  .modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  @media(max-width:480px){.grid2{grid-template-columns:1fr;}}
+  .empty{color:var(--ink-soft); font-size:13px; padding:18px 0; text-align:center;}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <div class="wordmark"><div class="bar"></div><div><b>AAROS</b><span>Admin</span></div></div>
+  <h1>Connexion éditeur</h1>
+  <input id="gate-email" type="email" placeholder="Email" autocomplete="username">
+  <input id="gate-pass" type="password" placeholder="Mot de passe" autocomplete="current-password">
+  <button class="btn primary" id="gate-btn">Se connecter</button>
+  <div class="gate-error" id="gate-error"></div>
+</div>
+
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="brandrow">
+      <div class="wordmark"><div class="bar"></div><div><b>AAROS</b><span>Admin</span></div></div>
+      <div class="who"><span id="who-email"></span><button class="btn ghost" id="logout-btn">Déconnexion</button></div>
+    </div>
+  </header>
+  <div class="tabs" role="tablist">
+    <button data-tab="demandes" aria-selected="true">Demandes support</button>
+    <button data-tab="clients" aria-selected="false">Clients</button>
+    <button data-tab="engagement" aria-selected="false">Engagement support</button>
+  </div>
+  <div class="tabline"></div>
+
+  <div class="shell">
+    <div id="global-status"></div>
+
+    <!-- ===== Demandes support ===== -->
+    <section id="tab-demandes">
+      <div class="card">
+        <div class="row-head">
+          <div class="chips" id="statut-filters">
+            <button class="chip active" data-statut="">Toutes</button>
+            <button class="chip" data-statut="ouvert">Ouvert</button>
+            <button class="chip" data-statut="en_cours">En cours</button>
+            <button class="chip" data-statut="traite">Traité</button>
+            <button class="chip" data-statut="clos">Clos</button>
+          </div>
+          <button class="btn primary" id="new-demande-btn">+ Nouvelle demande</button>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Ouverture</th><th>Client</th><th>Salon</th><th>Canal</th><th>Objet</th><th>Niveau</th><th>Statut</th>
+            </tr></thead>
+            <tbody id="demandes-body"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="demandes-empty" hidden>Aucune demande pour ce filtre.</div>
+      </div>
+    </section>
+
+    <!-- ===== Clients ===== -->
+    <section id="tab-clients" hidden>
+      <div class="card">
+        <div class="row-head">
+          <h2 style="margin:0;">Annuaire des clients AAROS</h2>
+          <button class="btn primary" id="new-client-btn">+ Nouveau client</button>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Raison sociale</th><th>Contact</th><th>Email</th><th>Téléphone</th><th>1ère install.</th><th>Statut</th>
+            </tr></thead>
+            <tbody id="clients-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Engagement support ===== -->
+    <section id="tab-engagement" hidden>
+      <div class="card">
+        <div class="row-head"><h2 style="margin:0;">Engagement de support en vigueur</h2>
+          <button class="btn sm" id="edit-engagement-btn">Modifier</button>
+        </div>
+        <div id="engagement-view"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="overlay" class="overlay" hidden></div>
+
+<script>
+const SUPABASE_URL = "COLLER_ICI_URL_PROJET_AAROS_ADMIN";
+const SUPABASE_ANON_KEY = "COLLER_ICI_CLE_ANON_PROJET_AAROS_ADMIN";
+
+let supa, currentUser = null, clientsCache = [], statutFilter = "";
+
+function escapeHtml(s){
+  return (s ?? "").toString().replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function fmtDate(iso){
+  if(!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("fr-FR") + " " + d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+}
+function showStatus(msg, type){
+  const el = document.getElementById("global-status");
+  el.innerHTML = `<div class="status-banner ${type}">${escapeHtml(msg)}</div>`;
+  if(type === "ok") setTimeout(()=>{ if(el.firstChild) el.innerHTML=""; }, 2500);
+}
+function closeOverlay(){
+  const ov = document.getElementById("overlay");
+  ov.hidden = true; ov.innerHTML = "";
+}
+
+function waitForSupabaseLib(){
+  return new Promise(resolve=>{
+    if(window.supabase) return resolve();
+    const t = setInterval(()=>{ if(window.supabase){ clearInterval(t); resolve(); } }, 50);
+  });
+}
+
+async function init(){
+  await waitForSupabaseLib();
+  supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  supa.auth.onAuthStateChange((_event, session)=>{
+    currentUser = session?.user ?? null;
+    renderGateOrApp();
+    if(currentUser) loadAll();
+  });
+  const { data } = await supa.auth.getSession();
+  currentUser = data?.session?.user ?? null;
+  renderGateOrApp();
+  if(currentUser) loadAll();
+
+  document.getElementById("gate-btn").addEventListener("click", doLogin);
+  document.getElementById("gate-pass").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+  document.getElementById("logout-btn").addEventListener("click", async ()=>{ await supa.auth.signOut(); });
+
+  document.querySelectorAll(".tabs button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected", b===btn ? "true":"false"));
+      ["demandes","clients","engagement"].forEach(name=>{
+        document.getElementById("tab-"+name).hidden = (name !== btn.dataset.tab);
+      });
+    });
+  });
+
+  document.querySelectorAll("#statut-filters .chip").forEach(chip=>{
+    chip.addEventListener("click", ()=>{
+      document.querySelectorAll("#statut-filters .chip").forEach(c=>c.classList.remove("active"));
+      chip.classList.add("active");
+      statutFilter = chip.dataset.statut;
+      loadDemandes();
+    });
+  });
+
+  document.getElementById("new-demande-btn").addEventListener("click", openNewDemandeModal);
+  document.getElementById("new-client-btn").addEventListener("click", openNewClientModal);
+  document.getElementById("edit-engagement-btn").addEventListener("click", openEditEngagementModal);
+}
+
+function renderGateOrApp(){
+  document.getElementById("gate").hidden = !!currentUser;
+  document.getElementById("app").hidden = !currentUser;
+  if(currentUser) document.getElementById("who-email").textContent = currentUser.email;
+}
+
+async function doLogin(){
+  const email = document.getElementById("gate-email").value.trim();
+  const password = document.getElementById("gate-pass").value;
+  const errEl = document.getElementById("gate-error");
+  errEl.textContent = "";
+  if(!email || !password){ errEl.textContent = "Email et mot de passe requis."; return; }
+  const { error } = await supa.auth.signInWithPassword({ email, password });
+  if(error) errEl.textContent = "Identifiants incorrects.";
+}
+
+async function loadAll(){
+  await Promise.all([loadClientsForCache(), loadDemandes(), loadClients(), loadEngagement()]);
+}
+
+async function loadClientsForCache(){
+  const { data, error } = await supa.from("clients_aaros").select("id, raison_sociale").order("raison_sociale");
+  if(!error) clientsCache = data || [];
+}
+
+async function loadDemandes(){
+  let q = supa.from("demandes_support")
+    .select("id, salon_concerne, canal, objet, description, niveau_traitant, traite_par, statut, action_corrective, numero_version_corrective, date_ouverture, date_cloture, client_id, clients_aaros(raison_sociale)")
+    .order("date_ouverture", { ascending:false });
+  if(statutFilter) q = q.eq("statut", statutFilter);
+  const { data, error } = await q;
+  const body = document.getElementById("demandes-body");
+  const emptyEl = document.getElementById("demandes-empty");
+  if(error){ showStatus("Erreur de chargement des demandes : " + error.message, "err"); return; }
+  if(!data || !data.length){
+    body.innerHTML = ""; emptyEl.hidden = false; return;
+  }
+  emptyEl.hidden = true;
+  body.innerHTML = data.map(d => `
+    <tr class="clickable" data-id="${d.id}">
+      <td class="num">${fmtDate(d.date_ouverture)}</td>
+      <td>${escapeHtml(d.clients_aaros?.raison_sociale || "—")}</td>
+      <td>${escapeHtml(d.salon_concerne || "—")}</td>
+      <td>${escapeHtml(d.canal)}</td>
+      <td>${escapeHtml(d.objet)}</td>
+      <td><span class="badge n${d.niveau_traitant}">Niveau ${d.niveau_traitant}</span></td>
+      <td><span class="badge ${d.statut}">${escapeHtml(d.statut.replace("_"," "))}</span></td>
+    </tr>`).join("");
+  body.querySelectorAll("tr.clickable").forEach(tr=>{
+    tr.addEventListener("click", ()=>{
+      const demande = data.find(d => d.id === tr.dataset.id);
+      openDemandeDetailModal(demande);
+    });
+  });
+}
+
+async function loadClients(){
+  const { data, error } = await supa.from("clients_aaros")
+    .select("id, raison_sociale, contact_nom, contact_email, contact_telephone, date_premiere_installation, statut")
+    .order("raison_sociale");
+  const body = document.getElementById("clients-body");
+  if(error){ showStatus("Erreur de chargement des clients : " + error.message, "err"); return; }
+  body.innerHTML = (data||[]).map(c => `
+    <tr>
+      <td><b>${escapeHtml(c.raison_sociale)}</b></td>
+      <td>${escapeHtml(c.contact_nom || "—")}</td>
+      <td>${escapeHtml(c.contact_email || "—")}</td>
+      <td>${escapeHtml(c.contact_telephone || "—")}</td>
+      <td class="num">${c.date_premiere_installation ? new Date(c.date_premiere_installation).toLocaleDateString("fr-FR") : "—"}</td>
+      <td><span class="badge ${c.statut}">${escapeHtml(c.statut)}</span></td>
+    </tr>`).join("");
+}
+
+async function loadEngagement(){
+  const { data, error } = await supa.from("engagement_support").select("*").eq("actif", true).order("updated_at",{ascending:false}).limit(1);
+  const el = document.getElementById("engagement-view");
+  if(error){ showStatus("Erreur de chargement de l'engagement : " + error.message, "err"); return; }
+  const e = data && data[0];
+  if(!e){ el.innerHTML = `<div class="empty">Aucun engagement actif enregistré.</div>`; return; }
+  el.innerHTML = `
+    <div class="grid2">
+      <div class="field"><label>Jours</label><div>${escapeHtml(e.jours)}</div></div>
+      <div class="field"><label>Horaires</label><div>${e.heure_debut?.slice(0,5)} – ${e.heure_fin?.slice(0,5)}</div></div>
+      <div class="field"><label>Niveau 1</label><div>${escapeHtml(e.niveau1_nom)}</div></div>
+      <div class="field"><label>Niveau 2</label><div>${escapeHtml(e.niveau2_nom)}</div></div>
+      <div class="field"><label>Canal téléphone</label><div>${escapeHtml(e.canal_telephone || "—")}</div></div>
+      <div class="field"><label>Canal email</label><div>${escapeHtml(e.canal_email || "—")}</div></div>
+    </div>`;
+  el.dataset.engagementId = e.id;
+}
+
+// ---------- Modales ----------
+
+function openModal(html){
+  const ov = document.getElementById("overlay");
+  ov.innerHTML = `<div class="modal">${html}</div>`;
+  ov.hidden = false;
+  ov.onclick = (e)=>{ if(e.target === ov) closeOverlay(); };
+}
+
+function openNewDemandeModal(){
+  const options = clientsCache.map(c => `<option value="${c.id}">${escapeHtml(c.raison_sociale)}</option>`).join("");
+  openModal(`
+    <h3>Nouvelle demande de support</h3>
+    <div class="field"><label>Client</label><select id="nd-client">${options}</select></div>
+    <div class="grid2">
+      <div class="field"><label>Salon concerné</label><input id="nd-salon" placeholder="ex. AS21"></div>
+      <div class="field"><label>Canal</label><select id="nd-canal"><option value="telephone">Téléphone</option><option value="email">Email</option><option value="autre">Autre</option></select></div>
+    </div>
+    <div class="field"><label>Objet</label><input id="nd-objet" placeholder="Résumé en une ligne"></div>
+    <div class="field"><label>Description</label><textarea id="nd-description"></textarea></div>
+    <div class="field"><label>Niveau traitant</label><select id="nd-niveau"><option value="1">1 — Eury</option><option value="2">2 — Enzo</option></select></div>
+    <div class="modal-actions">
+      <button class="btn" id="nd-cancel">Annuler</button>
+      <button class="btn primary" id="nd-save">Créer</button>
+    </div>`);
+  document.getElementById("nd-cancel").addEventListener("click", closeOverlay);
+  document.getElementById("nd-save").addEventListener("click", async ()=>{
+    const payload = {
+      client_id: document.getElementById("nd-client").value || null,
+      salon_concerne: document.getElementById("nd-salon").value.trim() || null,
+      canal: document.getElementById("nd-canal").value,
+      objet: document.getElementById("nd-objet").value.trim(),
+      description: document.getElementById("nd-description").value.trim() || null,
+      niveau_traitant: parseInt(document.getElementById("nd-niveau").value, 10),
+    };
+    if(!payload.objet){ showStatus("L'objet est obligatoire.", "err"); return; }
+    const { error } = await supa.from("demandes_support").insert(payload);
+    if(error){ showStatus("Erreur à la création : " + error.message, "err"); return; }
+    closeOverlay(); showStatus("Demande créée.", "ok"); loadDemandes();
+  });
+}
+
+function openDemandeDetailModal(d){
+  openModal(`
+    <h3>${escapeHtml(d.objet)}</h3>
+    <div class="grid2">
+      <div class="field"><label>Client</label><div>${escapeHtml(d.clients_aaros?.raison_sociale || "—")}</div></div>
+      <div class="field"><label>Salon</label><div>${escapeHtml(d.salon_concerne || "—")}</div></div>
+    </div>
+    <div class="field"><label>Description</label><div>${escapeHtml(d.description || "—")}</div></div>
+    <div class="grid2">
+      <div class="field"><label>Statut</label>
+        <select id="dd-statut">
+          ${["ouvert","en_cours","traite","clos"].map(s=>`<option value="${s}" ${s===d.statut?"selected":""}>${s.replace("_"," ")}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field"><label>Niveau traitant</label>
+        <select id="dd-niveau">
+          <option value="1" ${d.niveau_traitant===1?"selected":""}>1 — Eury</option>
+          <option value="2" ${d.niveau_traitant===2?"selected":""}>2 — Enzo</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Traité par</label><input id="dd-traite-par" value="${escapeHtml(d.traite_par || "")}"></div>
+    <div class="field"><label>Action corrective</label><textarea id="dd-action">${escapeHtml(d.action_corrective || "")}</textarea></div>
+    <div class="field"><label>N° de version corrective (si applicable)</label><input id="dd-version" value="${escapeHtml(d.numero_version_corrective || "")}" placeholder="ex. 2026.11.1"></div>
+    <div class="modal-actions">
+      <button class="btn" id="dd-cancel">Fermer</button>
+      <button class="btn primary" id="dd-save">Enregistrer</button>
+    </div>`);
+  document.getElementById("dd-cancel").addEventListener("click", closeOverlay);
+  document.getElementById("dd-save").addEventListener("click", async ()=>{
+    const statut = document.getElementById("dd-statut").value;
+    const payload = {
+      statut,
+      niveau_traitant: parseInt(document.getElementById("dd-niveau").value, 10),
+      traite_par: document.getElementById("dd-traite-par").value.trim() || null,
+      action_corrective: document.getElementById("dd-action").value.trim() || null,
+      numero_version_corrective: document.getElementById("dd-version").value.trim() || null,
+      date_cloture: statut === "clos" ? new Date().toISOString() : null,
+    };
+    const { error } = await supa.from("demandes_support").update(payload).eq("id", d.id);
+    if(error){ showStatus("Erreur à l'enregistrement : " + error.message, "err"); return; }
+    closeOverlay(); showStatus("Demande mise à jour.", "ok"); loadDemandes();
+  });
+}
+
+function openNewClientModal(){
+  openModal(`
+    <h3>Nouveau client AAROS</h3>
+    <div class="field"><label>Raison sociale</label><input id="nc-raison"></div>
+    <div class="grid2">
+      <div class="field"><label>Contact</label><input id="nc-contact"></div>
+      <div class="field"><label>Téléphone</label><input id="nc-tel"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Email</label><input id="nc-email" type="email"></div>
+      <div class="field"><label>SIRET</label><input id="nc-siret"></div>
+    </div>
+    <div class="field"><label>Adresse</label><input id="nc-adresse"></div>
+    <div class="modal-actions">
+      <button class="btn" id="nc-cancel">Annuler</button>
+      <button class="btn primary" id="nc-save">Créer</button>
+    </div>`);
+  document.getElementById("nc-cancel").addEventListener("click", closeOverlay);
+  document.getElementById("nc-save").addEventListener("click", async ()=>{
+    const payload = {
+      raison_sociale: document.getElementById("nc-raison").value.trim(),
+      contact_nom: document.getElementById("nc-contact").value.trim() || null,
+      contact_telephone: document.getElementById("nc-tel").value.trim() || null,
+      contact_email: document.getElementById("nc-email").value.trim() || null,
+      siret: document.getElementById("nc-siret").value.trim() || null,
+      adresse: document.getElementById("nc-adresse").value.trim() || null,
+      date_premiere_installation: new Date().toISOString().slice(0,10),
+    };
+    if(!payload.raison_sociale){ showStatus("La raison sociale est obligatoire.", "err"); return; }
+    const { error } = await supa.from("clients_aaros").insert(payload);
+    if(error){ showStatus("Erreur à la création : " + error.message, "err"); return; }
+    closeOverlay(); showStatus("Client créé.", "ok"); loadClientsForCache(); loadClients();
+  });
+}
+
+function openEditEngagementModal(){
+  const el = document.getElementById("engagement-view");
+  const id = el.dataset.engagementId;
+  if(!id){ showStatus("Aucun engagement actif à modifier.", "err"); return; }
+  supa.from("engagement_support").select("*").eq("id", id).single().then(({data:e, error})=>{
+    if(error){ showStatus("Erreur : " + error.message, "err"); return; }
+    openModal(`
+      <h3>Modifier l'engagement de support</h3>
+      <div class="field"><label>Jours</label><input id="ee-jours" value="${escapeHtml(e.jours)}"></div>
+      <div class="grid2">
+        <div class="field"><label>Heure début</label><input id="ee-debut" type="time" value="${e.heure_debut?.slice(0,5)}"></div>
+        <div class="field"><label>Heure fin</label><input id="ee-fin" type="time" value="${e.heure_fin?.slice(0,5)}"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Niveau 1 (nom)</label><input id="ee-n1" value="${escapeHtml(e.niveau1_nom)}"></div>
+        <div class="field"><label>Niveau 2 (nom)</label><input id="ee-n2" value="${escapeHtml(e.niveau2_nom)}"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Canal téléphone</label><input id="ee-tel" value="${escapeHtml(e.canal_telephone||"")}"></div>
+        <div class="field"><label>Canal email</label><input id="ee-email" value="${escapeHtml(e.canal_email||"")}"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="ee-cancel">Annuler</button>
+        <button class="btn primary" id="ee-save">Enregistrer</button>
+      </div>`);
+    document.getElementById("ee-cancel").addEventListener("click", closeOverlay);
+    document.getElementById("ee-save").addEventListener("click", async ()=>{
+      const payload = {
+        jours: document.getElementById("ee-jours").value.trim(),
+        heure_debut: document.getElementById("ee-debut").value,
+        heure_fin: document.getElementById("ee-fin").value,
+        niveau1_nom: document.getElementById("ee-n1").value.trim(),
+        niveau2_nom: document.getElementById("ee-n2").value.trim(),
+        canal_telephone: document.getElementById("ee-tel").value.trim() || null,
+        canal_email: document.getElementById("ee-email").value.trim() || null,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supa.from("engagement_support").update(payload).eq("id", id);
+      if(error){ showStatus("Erreur à l'enregistrement : " + error.message, "err"); return; }
+      closeOverlay(); showStatus("Engagement mis à jour.", "ok"); loadEngagement();
+    });
+  });
+}
+
+init();
+</script>
+</body>
+</html>
